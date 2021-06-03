@@ -1,16 +1,30 @@
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.tree import DecisionTreeClassifier
 import pandas as pd
+import numpy as np
 
 
-file_name = "../Dataset/WSN-DS/binary_wsn-ds.xlsx"
+def Normalization(data):
+    for i in range(len(data[0])):
+        # 查找最大值
+        max_num = np.amax(data[:, i])
+        min_num = np.amin(data[:, i])
+
+        # 使用 min-max normalization 标准化
+        for j in range(len(data)):
+            data[j][i] = (data[j][i] - min_num) / (max_num - min_num)
+
+    return data
+
+
+file_name = "../Dataset/WSN-DS/binary_wsn-ds_0.1.xlsx"
 data_training = pd.read_excel(file_name, sheet_name='train data', usecols=range(0, 18), engine='openpyxl')
 data_testing = pd.read_excel(file_name, sheet_name='test data', usecols=range(0, 18), engine='openpyxl')
 train_target = pd.read_excel(file_name, sheet_name='train data', usecols=[18], engine='openpyxl')
 test_target = pd.read_excel(file_name, sheet_name='test data', usecols=[18], engine='openpyxl')
 print("Data loaded")
 # 变化矩阵形式
-dt_training = data_training.to_numpy()
-dt_testing = data_testing.to_numpy()
+dt_training = Normalization(data_training.to_numpy())  # 正则化
+dt_testing = Normalization(data_testing.to_numpy())  # 正则化
 dt_target_training = train_target.to_numpy()
 dt_target_testing = test_target.to_numpy()
 
