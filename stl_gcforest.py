@@ -7,6 +7,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import cross_val_score
 import torch.utils.data as Data
 import argparse
+from deepforest import CascadeForestClassifier
 
 
 def parse_args():
@@ -14,6 +15,7 @@ def parse_args():
 
     parser.add_argument('--file_name', '-i',
                         default='Dataset/WSN-DS/binary_wsn-ds_0.1.xlsx',
+                        # default='Dataset/IBRL/IBRL_data.xlsx',
                         dest='file_name',
                         help='Path to training data file (default: Dataset/WSN-DS/binary_wsn-ds_0.1.xlsx)')
 
@@ -25,9 +27,9 @@ def parse_args():
 
     parser.add_argument('--epochs', '-e',
                         type=int,
-                        default=50,
+                        default=20,
                         dest='epochs',
-                        help='Training epochs (default: 50)')
+                        help='Training epochs (default: 20)')
 
     parser.add_argument('--dimensions', '-d',
                         type=int,
@@ -46,6 +48,12 @@ def parse_args():
                         default=10,
                         dest='folds',
                         help='Number of folds (default: 10)')
+
+    parser.add_argument('--characteristic', '-c',
+                        type=int,
+                        default=18,
+                        dest='characteristic',
+                        help='Number of characteristic (default: 10)')
 
     return parser.parse_args()
 
@@ -93,7 +101,6 @@ class autoencoder(torch.nn.Module):
 
 # preprocessing (数据的标准化)
 def Normalization(data):
-
     for i in range(len(data[0])):
         # 查找最大值
         max = np.amax(data[:, i])
@@ -107,24 +114,59 @@ def Normalization(data):
 
 
 def load_data(file_name):
-    # 获取数据
-    data_training = pd.read_excel(file_name, sheet_name='train data', usecols=range(0, 18), engine='openpyxl')
-    data_testing = pd.read_excel(file_name, sheet_name='test data', usecols=range(0, 18), engine='openpyxl')
-    train_target = pd.read_excel(file_name, sheet_name='train data', usecols=[18], engine='openpyxl')
-    test_target = pd.read_excel(file_name, sheet_name='test data', usecols=[18], engine='openpyxl')
+    if 'wsn-ds' in file_name:
+        data_training = pd.read_excel(file_name, sheet_name='train data', usecols=range(0, 18), engine='openpyxl')
+        data_testing = pd.read_excel(file_name, sheet_name='test data', usecols=range(0, 18), engine='openpyxl')
+        train_target = pd.read_excel(file_name, sheet_name='train data', usecols=[18], engine='openpyxl')
+        test_target = pd.read_excel(file_name, sheet_name='test data', usecols=[18], engine='openpyxl')
+    else:
+        inject = 'noise_inject'
+        # inject = 'short_term_inject'
+        # inject = 'fixed_inject'
+        data_training = pd.read_excel(file_name, sheet_name=inject + '_train', usecols=range(0, 20), engine='openpyxl')
+        data_testing = pd.read_excel(file_name, sheet_name=inject + '_test', usecols=range(0, 20), engine='openpyxl')
+        train_target = pd.read_excel(file_name, sheet_name=inject + '_train', usecols=[20], engine='openpyxl')
+        test_target = pd.read_excel(file_name, sheet_name=inject + '_test', usecols=[20], engine='openpyxl')
     print("Data loaded")
     # 变化矩阵形式
-    x = Normalization(data_training.to_numpy())
-    y = train_target.to_numpy()
-    dt_testing = Normalization(data_testing.to_numpy())
+    dt_training = data_training.to_numpy()
+    dt_testing = data_testing.to_numpy()
+    dt_target_training = train_target.to_numpy()
     dt_target_testing = test_target.to_numpy()
 
-    x = torch.from_numpy(x).float()  # x(torch tensor)
-    y = torch.from_numpy(y).float()  # y(torch tensor)
+    dt_training = torch.from_numpy(dt_training).float()  # x(torch tensor)
+    dt_target_training = torch.from_numpy(dt_target_training).float()  # y(torch tensor)
     dt_testing = torch.from_numpy(dt_testing).float()
     dt_target_testing = torch.from_numpy(dt_target_testing).float()
 
-    return x, y, dt_testing, dt_target_testing
+    return dt_training, dt_target_training, dt_testing, dt_target_testing
+
+
+def random_forest(encode_train, y, encode_test, dt_target_testing, args):
+    rfc = RandomForestClassifier(n_estimators=5, max_depth=None, min_samples_split=2, random_state=0)
+    # scores = cross_val_score(rfc, encode_train, y, cv=args.folds, scoring='accuracy')  # k折交叉验证
+    # print(scores)
+    # scores = cross_val_score(rfc, encode_test, dt_target_testing, cv=args.folds, scoring='accuracy')
+    # print(scores)
+    # # [0.97784895 0.98211903 0.98425407 0.98532159 0.99572992 0.99839872 0.99252536 0.97463962 0.97650828 0.98585158]
+
+    model = rfc.fit(encode_train, y)
+    dataset_predict_y = rfc.predict(encode_test)
+    correct_predicts = sum([1 if dataset_predict_y[i] == dt_target_testing[i] else 0
+                            for i in range(len(dataset_predict_y))])
+    accuracy = 100 * correct_predicts / len(encode_test)
+    print('random forest,correct prediction num:{},accuracy:{:.2f}%'
+          .format(correct_predicts, accuracy))
+
+
+def deep_forest(encode_train, y, encode_test, dt_target_testing):
+    from sklearn.metrics import accuracy_score
+
+    model = CascadeForestClassifier(n_estimators=5, random_state=0)
+    model.fit(encode_train, y)
+    y_pred = model.predict(encode_test)
+    acc = accuracy_score(dt_target_testing, y_pred) * 100
+    print("\nTesting Accuracy: {:.3f} %".format(acc))
 
 
 def run(args):
@@ -144,14 +186,14 @@ def run(args):
         # drop_last=True,  # 最后一组删除
     )
 
-    net = autoencoder(input_size=18, hidden_size=args.hidden_size, out_features=args.dimensions)
+    net = autoencoder(input_size=args.characteristic, hidden_size=args.hidden_size, out_features=args.dimensions)
     # 训练
     optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
     loss_F = torch.nn.MSELoss()
     for epoch in range(epochs):  # 数据集只迭代一次
         for step, (batch_x, batch_y) in enumerate(loader):
-            _, decode = net(batch_x.view(-1, 1, 18))
-            loss = loss_F(decode, batch_x)  # 计算loss
+            _, decode = net(batch_x.view(-1, 1, args.characteristic))
+            loss = loss_F(decode, batch_x)  # 计算lossy
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -159,30 +201,25 @@ def run(args):
         # print('Epoch: ', epoch, '| train loss: %.4f' % loss.data.numpy())
 
     # 降维编码
-    encode_train, _ = net(x.view(-1, 1, 18))
+    encode_train, _ = net(x.view(-1, 1, args.characteristic))
     encode_train = encode_train.squeeze(1).detach().numpy()
     y = y.detach().numpy()
-    encode_test, _ = net(dt_testing.view(-1, 1, 18))
+    encode_test, _ = net(dt_testing.view(-1, 1, args.characteristic))
     encode_test = encode_test.squeeze(1).detach().numpy()
     dt_target_testing = dt_target_testing.detach().numpy()
 
     # 根据encode结果分类
-    rfc = RandomForestClassifier(n_estimators=5, max_depth=None, min_samples_split=2, random_state=0)
-    scores = cross_val_score(rfc, encode_train, y, cv=args.folds, scoring='accuracy')  # k折交叉验证
-    print(scores)
-    scores = cross_val_score(rfc, encode_test, dt_target_testing, cv=args.folds, scoring='accuracy')
-    print(scores)
-    # [0.97784895 0.98211903 0.98425407 0.98532159 0.99572992 0.99839872 0.99252536 0.97463962 0.97650828 0.98585158]
-
-    # model = clf.fit(dt_training, dt_target_training)
-    # dataset_predict_y = clf.predict(dt_testing)
-    # correct_predicts = sum([1 if dataset_predict_y[i] == dt_target_testing[i] else 0
-    #                         for i in range(len(dataset_predict_y))])
-    # accuracy = 100 * correct_predicts / len(dt_testing)
-    # print('random forest,correct prediction num:{},accuracy:{:.2f}%'
-    #       .format(correct_predicts, accuracy))
+    # random forest
+    random_forest(encode_train, y, encode_test, dt_target_testing, args)
+    # deep forest
+    deep_forest(encode_train, y, encode_test, dt_target_testing)
 
 
 if __name__ == '__main__':
     args = parse_args()
+    if 'wsn' in args.file_name:
+        args.characteristic = 18
+    else:
+        args.characteristic = 20
+
     run(args)
