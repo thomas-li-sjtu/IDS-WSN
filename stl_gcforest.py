@@ -23,7 +23,7 @@ def parse_args():
                         type=int,
                         default=32,
                         dest='batch_size',
-                        help='Batch size (default: 64).')
+                        help='Batch size (default: 32).')
 
     parser.add_argument('--epochs', '-e',
                         type=int,
@@ -33,7 +33,7 @@ def parse_args():
 
     parser.add_argument('--dimensions', '-d',
                         type=int,
-                        default=5,
+                        default=20,
                         dest='dimensions',
                         help='Dimension reduction result (default: 5)')
 
@@ -58,7 +58,7 @@ def parse_args():
     return parser.parse_args()
 
 
-class autoencoder(torch.nn.Module):
+class AutoEncoder(torch.nn.Module):
     def __init__(self, input_size, hidden_size, out_features):
         super().__init__()
         self.input_size = input_size
@@ -68,14 +68,14 @@ class autoencoder(torch.nn.Module):
         self.rnn = torch.nn.LSTM(
             input_size=self.input_size,
             hidden_size=self.hidden_size,
-            num_layers=1,
+            num_layers=2,
             batch_first=True
         )
         self.out = torch.nn.Linear(in_features=64, out_features=self.out_features)  # 编码的维度为
         self.rnn_2 = torch.nn.LSTM(
             input_size=self.out_features,
             hidden_size=self.hidden_size,
-            num_layers=1,
+            num_layers=2,
             batch_first=True
         )
         self.out_2 = torch.nn.Linear(in_features=64, out_features=self.input_size)  # out_features = input_size
@@ -103,12 +103,12 @@ class autoencoder(torch.nn.Module):
 def Normalization(data):
     for i in range(len(data[0])):
         # 查找最大值
-        max = np.amax(data[:, i])
-        min = np.amin(data[:, i])
+        max_num = np.amax(data[:, i])
+        min_num = np.amin(data[:, i])
 
         # 使用 min-max normalization 标准化
         for j in range(len(data)):
-            data[j][i] = (data[j][i] - min) / (max - min)
+            data[j][i] = (data[j][i] - min_num) / (max_num - min_num)
 
     return data
 
@@ -129,8 +129,8 @@ def load_data(file_name):
         test_target = pd.read_excel(file_name, sheet_name=inject + '_test', usecols=[20], engine='openpyxl')
     print("Data loaded")
     # 变化矩阵形式
-    dt_training = data_training.to_numpy()
-    dt_testing = data_testing.to_numpy()
+    dt_training = Normalization(data_training.to_numpy())  # 正则化
+    dt_testing = Normalization(data_testing.to_numpy())  # 正则化
     dt_target_training = train_target.to_numpy()
     dt_target_testing = test_target.to_numpy()
 
@@ -144,19 +144,19 @@ def load_data(file_name):
 
 def random_forest(encode_train, y, encode_test, dt_target_testing, args):
     rfc = RandomForestClassifier(n_estimators=5, max_depth=None, min_samples_split=2, random_state=0)
-    # scores = cross_val_score(rfc, encode_train, y, cv=args.folds, scoring='accuracy')  # k折交叉验证
-    # print(scores)
-    # scores = cross_val_score(rfc, encode_test, dt_target_testing, cv=args.folds, scoring='accuracy')
-    # print(scores)
-    # # [0.97784895 0.98211903 0.98425407 0.98532159 0.99572992 0.99839872 0.99252536 0.97463962 0.97650828 0.98585158]
-
-    model = rfc.fit(encode_train, y)
-    dataset_predict_y = rfc.predict(encode_test)
-    correct_predicts = sum([1 if dataset_predict_y[i] == dt_target_testing[i] else 0
-                            for i in range(len(dataset_predict_y))])
-    accuracy = 100 * correct_predicts / len(encode_test)
-    print('random forest,correct prediction num:{},accuracy:{:.2f}%'
-          .format(correct_predicts, accuracy))
+    scores = cross_val_score(rfc, encode_train, y, cv=args.folds, scoring='accuracy')  # k折交叉验证
+    print(scores)
+    scores = cross_val_score(rfc, encode_test, dt_target_testing, cv=args.folds, scoring='accuracy')
+    print('random forest: {}'.format(scores))
+    # [0.97784895 0.98211903 0.98425407 0.98532159 0.99572992 0.99839872 0.99252536 0.97463962 0.97650828 0.98585158]
+    #
+    # model = rfc.fit(encode_train, y)
+    # dataset_predict_y = rfc.predict(encode_test)
+    # correct_predicts = sum([1 if dataset_predict_y[i] == dt_target_testing[i] else 0
+    #                         for i in range(len(dataset_predict_y))])
+    # accuracy = 100 * correct_predicts / len(encode_test)
+    # print('random forest,correct prediction num:{},accuracy:{:.2f}%'
+    #       .format(correct_predicts, accuracy))
 
 
 def deep_forest(encode_train, y, encode_test, dt_target_testing):
@@ -166,7 +166,7 @@ def deep_forest(encode_train, y, encode_test, dt_target_testing):
     model.fit(encode_train, y)
     y_pred = model.predict(encode_test)
     acc = accuracy_score(dt_target_testing, y_pred) * 100
-    print("\nTesting Accuracy: {:.3f} %".format(acc))
+    print("\ndeep forest Testing Accuracy: {:.3f} %".format(acc))
 
 
 def run(args):
@@ -186,7 +186,7 @@ def run(args):
         # drop_last=True,  # 最后一组删除
     )
 
-    net = autoencoder(input_size=args.characteristic, hidden_size=args.hidden_size, out_features=args.dimensions)
+    net = AutoEncoder(input_size=args.characteristic, hidden_size=args.hidden_size, out_features=args.dimensions)
     # 训练
     optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
     loss_F = torch.nn.MSELoss()
@@ -212,7 +212,7 @@ def run(args):
     # random forest
     random_forest(encode_train, y, encode_test, dt_target_testing, args)
     # deep forest
-    deep_forest(encode_train, y, encode_test, dt_target_testing)
+    # deep_forest(encode_train, y, encode_test, dt_target_testing)
 
 
 if __name__ == '__main__':
