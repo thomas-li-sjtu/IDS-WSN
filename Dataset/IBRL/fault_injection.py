@@ -41,10 +41,10 @@ def noise_fault(origin, attributes, noise_times=3, num=500, duration=5):
     temperature, humidity, light, voltage = zip(*origin)
     tmp_dict = {1: list(temperature), 2: list(humidity), 3: list(light), 4: list(voltage),
                 'labels': [1] * len(temperature)}
+    ran_index = sorted(random.sample(range(len(tmp_dict[1]) - duration), int(num / duration)))  # 噪音开始的位置
     for i in attributes:
         std_noise = np.std(np.array(tmp_dict[i]), ddof=1) * noise_times
         nosie = np.random.normal(loc=0.0, scale=std_noise, size=num)
-        ran_index = sorted(random.sample(range(len(tmp_dict[i]) - duration), int(num / duration)))  # 噪音开始的位置
 
         # 混入噪音
         counter = 0
@@ -69,9 +69,8 @@ def short_term_fault(origin, attributes, f=1.5, nums=500):
     temperature, humidity, light, voltage = zip(*origin)
     tmp_dict = {1: list(temperature), 2: list(humidity), 3: list(light), 4: list(voltage),
                 'labels': [1] * len(temperature)}
+    ran_index = sorted(random.sample(range(len(tmp_dict[1])), nums))  # 噪音开始的位置
     for i in attributes:
-        ran_index = sorted(random.sample(range(len(tmp_dict[i])), nums))  # 噪音开始的位置
-
         # 混入噪音
         counter = 0
         for index in ran_index:
@@ -101,9 +100,8 @@ def fixed_fault(origin, attributes, error_data=-0.1, num=500, duration=5):
     temperature, humidity, light, voltage = zip(*origin)
     tmp_dict = {1: list(temperature), 2: list(humidity), 3: list(light), 4: list(voltage),
                 'labels': [1] * len(temperature)}
+    ran_index = sorted(random.sample(range(len(tmp_dict[1]) - duration), int(num / duration)))  # 故障开始的位置
     for i in attributes:
-        ran_index = sorted(random.sample(range(len(tmp_dict[i]) - duration), int(num / duration)))  # 故障开始的位置
-
         # 混入噪音
         counter = 0
         for index in ran_index:
@@ -207,18 +205,18 @@ def run():
     writer = pd.ExcelWriter("IBRL_data.xlsx")
     # 加入噪音故障
     tmp = normal_data[3]
-    normal_data[3] = noise_fault(normal_data[3], attributes=[3, 4])
-    save_data(normal_data, inject_node=3, attributes=[3, 4], writer=writer, sheet_name="noise_inject")
+    normal_data[3] = noise_fault(normal_data[3], attributes=[1, 2, 3, 4])
+    save_data(normal_data, inject_node=3, attributes=[1, 2, 3, 4], writer=writer, sheet_name="noise_inject")
     # # 加入短时故障
     normal_data[3] = tmp
     tmp = normal_data[35]
-    normal_data[35] = short_term_fault(normal_data[35], attributes=[1])
-    save_data(normal_data, inject_node=35, attributes=[1], writer=writer, sheet_name="short_term_inject")
+    normal_data[35] = short_term_fault(normal_data[35], attributes=[1, 2, 3, 4])
+    save_data(normal_data, inject_node=35, attributes=[1, 2, 3, 4], writer=writer, sheet_name="short_term_inject")
     # # 加入固定故障
     normal_data[35] = tmp
     tmp = normal_data[33]
-    normal_data[33] = fixed_fault(normal_data[33], attributes=[2])
-    save_data(normal_data, inject_node=33, attributes=[1], writer=writer, sheet_name="fixed_inject")
+    normal_data[33] = fixed_fault(normal_data[33], attributes=[1, 2, 3, 4])
+    save_data(normal_data, inject_node=33, attributes=[1, 2, 3, 4], writer=writer, sheet_name="fixed_inject")
 
     writer.save()
 
