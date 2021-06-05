@@ -4,7 +4,9 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score
 from sklearn.model_selection import cross_val_score
+from sklearn.svm import SVC
 import torch.utils.data as Data
 import argparse
 from deepforest import CascadeForestClassifier
@@ -14,7 +16,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--file_name', '-i',
-                        default='Dataset/WSN-DS/binary_wsn-ds_0.1.xlsx',
+                        default='Dataset/WSN-DS/binary_wsn-ds.xlsx',
                         # default='Dataset/IBRL/IBRL_data.xlsx',
                         dest='file_name',
                         help='Path to training data file (default: Dataset/WSN-DS/binary_wsn-ds_0.1.xlsx)')
@@ -160,13 +162,11 @@ def random_forest(encode_train, y, encode_test, dt_target_testing, args):
 
 
 def deep_forest(encode_train, y, encode_test, dt_target_testing):
-    from sklearn.metrics import accuracy_score
-
     model = CascadeForestClassifier(n_estimators=5, random_state=0)
     model.fit(encode_train, y)
     y_pred = model.predict(encode_test)
     acc = accuracy_score(dt_target_testing, y_pred) * 100
-    print("\ndeep forest Testing Accuracy: {:.3f} %".format(acc))
+    print("\ndeep forest Testing Accuracy: {:.4f} %".format(acc))
 
 
 def run(args):
@@ -210,9 +210,15 @@ def run(args):
 
     # 根据encode结果分类
     # random forest
-    random_forest(encode_train, y, encode_test, dt_target_testing, args)
+    # random_forest(encode_train, y, encode_test, dt_target_testing, args)
     # deep forest
     # deep_forest(encode_train, y, encode_test, dt_target_testing)
+
+    svc = SVC(C=1, kernel='rbf', gamma=10)
+    svc.fit(encode_train, y)
+    y_pred = svc.predict(encode_test)
+    acc = accuracy_score(dt_target_testing, y_pred) * 100
+    print("\nsvc Testing Accuracy: {:.4f} %".format(acc))
 
 
 if __name__ == '__main__':

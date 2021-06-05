@@ -66,7 +66,7 @@ n_feature = 18
 n_hidden = 20
 n_output = 1
 
-file_name = '../Dataset/WSN-DS/binary_wsn-ds_0.1.xlsx'
+file_name = '../Dataset/WSN-DS/binary_wsn-ds.xlsx'
 x, y, dt_testing, dt_target_testing = load_data(file_name)
 # 将输入和输出封装进Data.TensorDataset()类对象
 torch_dataset = Data.TensorDataset(x, y)
@@ -102,5 +102,5 @@ target_y = dt_target_testing.data.numpy()
 acc = sum([1 if target_y[i] == pred_y[i] else 0 for i in range(len(target_y))])/target_y.size
 print("acc :", acc)
 
-# WSN_0.1  正则 97.6  非正则 91
-# WSN
+# WSN-DS_0.1  正则 97.6%  非正则 91
+# WSN-DS  二分类  正则：97.64%   非正则：

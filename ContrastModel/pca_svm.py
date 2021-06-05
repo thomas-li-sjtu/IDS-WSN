@@ -1,6 +1,21 @@
 from sklearn.decomposition import PCA
 from sklearn import svm
 import pandas as pd
+import numpy as np
+
+
+def Normalization(data):
+    for i in range(len(data[0])):
+        # 查找最大值
+        max_num = np.amax(data[:, i])
+        min_num = np.amin(data[:, i])
+
+        # 使用 min-max normalization 标准化
+        for j in range(len(data)):
+            data[j][i] = (data[j][i] - min_num) / (max_num - min_num)
+
+    return data
+
 
 # 获取数据
 file_name = "../Dataset/WSN-DS/binary_wsn-ds.xlsx"
@@ -10,8 +25,8 @@ train_target = pd.read_excel(file_name, sheet_name='train data', usecols=[18], e
 test_target = pd.read_excel(file_name, sheet_name='test data', usecols=[18], engine='openpyxl')
 print("Data loaded")
 # 变化矩阵形式
-dt_training = data_training.to_numpy()
-dt_testing = data_testing.to_numpy()
+dt_training = Normalization(data_training.to_numpy())  # 正则化
+dt_testing = Normalization(data_testing.to_numpy())  # 正则化
 dt_target_training = train_target.to_numpy()
 dt_target_testing = test_target.to_numpy()
 
@@ -32,4 +47,5 @@ accuracy = 100 * correct_predicts / len(dt_testing)
 print('pca+svm,correct prediction num:{},accuracy:{:.2f}%'
       .format(correct_predicts, accuracy))
 
-# 93.43% (97.5%)
+# WSN_0.1  非正则：93.43%   正则：98.06%
+# WSN  非正则：97.5%   正则：98.01%

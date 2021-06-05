@@ -2,7 +2,7 @@ from sklearn.ensemble import RandomForestClassifier
 import pandas as pd
 
 # 获取数据
-file_name = "../Dataset/WSN-DS/binary_wsn-ds_0.1.xlsx"
+file_name = "../Dataset/WSN-DS/binary_wsn-ds.xlsx"
 data_training = pd.read_excel(file_name, sheet_name='train data', usecols=range(0, 18), engine='openpyxl')
 data_testing = pd.read_excel(file_name, sheet_name='test data', usecols=range(0, 18), engine='openpyxl')
 train_target = pd.read_excel(file_name, sheet_name='train data', usecols=[18], engine='openpyxl')
@@ -24,4 +24,5 @@ accuracy = 100 * correct_predicts / len(dt_testing)
 print('random forest,correct prediction num:{},accuracy:{:.2f}%'
       .format(correct_predicts, accuracy))
 
-# 99+
+# WSN-DS_0.1  非正则：99.63   正则：
+# WSN-DS  非正则：99.66   正则：

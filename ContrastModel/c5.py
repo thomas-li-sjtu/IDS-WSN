@@ -16,15 +16,17 @@ def Normalization(data):
     return data
 
 
-file_name = "../Dataset/WSN-DS/binary_wsn-ds_0.1.xlsx"
+file_name = "../Dataset/WSN-DS/binary_wsn-ds.xlsx"
 data_training = pd.read_excel(file_name, sheet_name='train data', usecols=range(0, 18), engine='openpyxl')
 data_testing = pd.read_excel(file_name, sheet_name='test data', usecols=range(0, 18), engine='openpyxl')
 train_target = pd.read_excel(file_name, sheet_name='train data', usecols=[18], engine='openpyxl')
 test_target = pd.read_excel(file_name, sheet_name='test data', usecols=[18], engine='openpyxl')
 print("Data loaded")
 # 变化矩阵形式
-dt_training = Normalization(data_training.to_numpy())  # 正则化
-dt_testing = Normalization(data_testing.to_numpy())  # 正则化
+# dt_training = Normalization(data_training.to_numpy())  # 正则化
+# dt_testing = Normalization(data_testing.to_numpy())  # 正则化
+dt_training = data_training.to_numpy()
+dt_testing = data_testing.to_numpy()
 dt_target_training = train_target.to_numpy()
 dt_target_testing = test_target.to_numpy()
 
@@ -37,4 +39,5 @@ accuracy = 100 * correct_predicts / len(dt_testing)
 print('C5,correct prediction num:{},accuracy:{:.2f}%'
       .format(correct_predicts, accuracy))
 
-# 98.56？
+# WSN-DS_0.1：正则：98.56 非正则：98.56
+# WSN-DS  二分类  正则：98.57  非正则：98.57%

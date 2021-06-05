@@ -18,7 +18,7 @@ def Normalization(data):
 
 
 # 获取数据
-file_name = "../Dataset/WSN-DS/binary_wsn-ds_0.1.xlsx"
+file_name = "../Dataset/WSN-DS/binary_wsn-ds.xlsx"
 # file_name = "../Dataset/IBRL/IBRL_data.xlsx"
 if 'wsn-ds' in file_name:
     data_training = pd.read_excel(file_name, sheet_name='train data', usecols=range(0, 18), engine='openpyxl')
@@ -35,8 +35,10 @@ else:
     test_target = pd.read_excel(file_name, sheet_name=inject+'_test', usecols=[20])
 print("Data loaded")
 # 变化矩阵形式
-dt_training = Normalization(data_training.to_numpy())  # 正则化
-dt_testing = Normalization(data_testing.to_numpy())  # 正则化
+# dt_training = Normalization(data_training.to_numpy())  # 正则化
+# dt_testing = Normalization(data_testing.to_numpy())  # 正则化
+dt_training = data_training.to_numpy()  # 正则化
+dt_testing = data_testing.to_numpy()  # 正则化
 dt_target_training = train_target.to_numpy()
 dt_target_testing = test_target.to_numpy()
 
@@ -54,3 +56,5 @@ print('GaussianNB,correct prediction num:{},accuracy:{:.2f}%'
       .format(correct_predicts, accuracy))
 
 # 非正则：87.32%  正则：97.51
+# WSN-DS: 二分类 正则：97.40%  非正则：87.32%
+#         多分类
