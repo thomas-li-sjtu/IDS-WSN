@@ -36,24 +36,41 @@ def Data():
     # test_target = pd.read_excel(file_name, sheet_name='testing', usecols=[14])
 
     # 获取数据
-    file_name = "Dataset/WSN-DS/binary_wsn-ds.xlsx"
-    data_training = pd.read_excel(file_name, sheet_name='train data', usecols=range(0, 18), engine='openpyxl')
-    data_testing = pd.read_excel(file_name, sheet_name='test data', usecols=range(0, 18), engine='openpyxl')
-    train_target = pd.read_excel(file_name, sheet_name='train data', usecols=[18], engine='openpyxl')
-    test_target = pd.read_excel(file_name, sheet_name='test data', usecols=[18], engine='openpyxl')
+    # file_name = "Dataset/WSN-DS/binary_wsn-ds.xlsx"
+    file_name = "Dataset/IBRL/IBRL_data.xlsx"
+    if 'wsn-ds' in file_name:
+        data_training = pd.read_excel(file_name, sheet_name='train data', usecols=range(0, 18), engine='openpyxl')
+        data_testing = pd.read_excel(file_name, sheet_name='test data', usecols=range(0, 18), engine='openpyxl')
+        train_target = pd.read_excel(file_name, sheet_name='train data', usecols=[18], engine='openpyxl')
+        test_target = pd.read_excel(file_name, sheet_name='test data', usecols=[18], engine='openpyxl')
+    else:
+        # inject = 'noise_inject'
+        # inject = 'short_term_inject'
+        inject = 'fixed_inject'
+        data_training = pd.read_excel(file_name, sheet_name=inject + '_train', usecols=range(0, 20), engine='openpyxl')
+        data_testing = pd.read_excel(file_name, sheet_name=inject + '_test', usecols=range(0, 20), engine='openpyxl')
+        train_target = pd.read_excel(file_name, sheet_name=inject + '_train', usecols=[20], engine='openpyxl')
+        test_target = pd.read_excel(file_name, sheet_name=inject + '_test', usecols=[20], engine='openpyxl')
     print("Data loaded")
-
     # 变化矩阵形式
-    Data.dt_training = Normalization(data_training.to_numpy())
-    Data.dt_testing = Normalization(data_testing.to_numpy())
+    # dt_training = Normalization(data_training.to_numpy())  # 正则化
+    # dt_testing = Normalization(data_testing.to_numpy())  # 正则化
+    Data.dt_training = data_training.to_numpy()  # 正则化
+    Data.dt_testing = data_testing.to_numpy()  # 正则化
     Data.dt_target_training = train_target.to_numpy()
     Data.dt_target_testing = test_target.to_numpy()
+
+    # 变化矩阵形式
+    # Data.dt_training = Normalization(data_training.to_numpy())
+    # Data.dt_testing = Normalization(data_testing.to_numpy())
+    # Data.dt_target_training = train_target.to_numpy()
+    # Data.dt_target_testing = test_target.to_numpy()
 
 
 def Hidden_layer(input_weights, biases, n_hidden_node, data_input):
     # 初始化 input weight
     # input_weight = input_weights.reshape(n_hidden_node, 13)
-    input_weight = input_weights.reshape(n_hidden_node, 18)
+    input_weight = input_weights.reshape(n_hidden_node, 20)
 
     # 初始化 bias
     bias = biases
@@ -262,14 +279,14 @@ def Elm(particles, n_input_weights, n_hidden_node):
 
 def Run():
     # 初始化 PSO
-    fitures = 18
+    fitures = 20
     n_hidden_node = 10  # 隐藏节点数 / partikel bias
     n_input_weights = n_hidden_node * fitures  # 粒子 input weight
     population = 200  # 每次迭代中的总体
     max_iter = 30  # 迭代最大值
     w = 0.5  # 惯性缓冲器
-    c1 = 1  # 速度常数 1
-    c2 = 1  # 速度常数 2
+    c1 = 2  # 速度常数 1
+    c2 = 2  # 速度常数 2
 
     # data
     Data()

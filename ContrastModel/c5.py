@@ -16,17 +16,28 @@ def Normalization(data):
     return data
 
 
-file_name = "../Dataset/WSN-DS/binary_wsn-ds.xlsx"
-data_training = pd.read_excel(file_name, sheet_name='train data', usecols=range(0, 18), engine='openpyxl')
-data_testing = pd.read_excel(file_name, sheet_name='test data', usecols=range(0, 18), engine='openpyxl')
-train_target = pd.read_excel(file_name, sheet_name='train data', usecols=[18], engine='openpyxl')
-test_target = pd.read_excel(file_name, sheet_name='test data', usecols=[18], engine='openpyxl')
+# 获取数据
+# file_name = "../Dataset/WSN-DS/binary_wsn-ds.xlsx"
+file_name = "../Dataset/IBRL/IBRL_data.xlsx"
+if 'wsn-ds' in file_name:
+    data_training = pd.read_excel(file_name, sheet_name='train data', usecols=range(0, 18), engine='openpyxl')
+    data_testing = pd.read_excel(file_name, sheet_name='test data', usecols=range(0, 18), engine='openpyxl')
+    train_target = pd.read_excel(file_name, sheet_name='train data', usecols=[18], engine='openpyxl')
+    test_target = pd.read_excel(file_name, sheet_name='test data', usecols=[18], engine='openpyxl')
+else:
+    # inject = 'noise_inject'
+    # inject = 'short_term_inject'
+    inject = 'fixed_inject'
+    data_training = pd.read_excel(file_name, sheet_name=inject + '_train', usecols=range(0, 20), engine='openpyxl')
+    data_testing = pd.read_excel(file_name, sheet_name=inject + '_test', usecols=range(0, 20), engine='openpyxl')
+    train_target = pd.read_excel(file_name, sheet_name=inject + '_train', usecols=[20], engine='openpyxl')
+    test_target = pd.read_excel(file_name, sheet_name=inject + '_test', usecols=[20], engine='openpyxl')
 print("Data loaded")
 # 变化矩阵形式
 # dt_training = Normalization(data_training.to_numpy())  # 正则化
 # dt_testing = Normalization(data_testing.to_numpy())  # 正则化
-dt_training = data_training.to_numpy()
-dt_testing = data_testing.to_numpy()
+dt_training = data_training.to_numpy()  # 正则化
+dt_testing = data_testing.to_numpy()  # 正则化
 dt_target_training = train_target.to_numpy()
 dt_target_testing = test_target.to_numpy()
 
