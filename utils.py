@@ -16,7 +16,7 @@ def dump(file_path, data):
 
 
 def draw_bar():
-    data_wsn = {'Naive Baise': 87.32, 'c5': 97.57, 'PCA-SVM': 93.43, 'MLP': 97.64, 'RNN': 98.09, 'VAE-DF': 99.42, 'SAE-SVM': 99.0.}
+    data_wsn = {'Naive Bayes': 87.32, 'c5': 97.57, 'PCA-SVM': 93.43, 'MLP': 97.64, 'RNN': 98.09, 'SAE-SVM': 99.03, 'VAE-DF': 99.42}
 
     import matplotlib.pyplot as plt
     import numpy as np
